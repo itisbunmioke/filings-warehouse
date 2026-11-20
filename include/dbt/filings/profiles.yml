@@ -1,0 +1,13 @@
+filings:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      role: FIN_PIPELINE
+      warehouse: FIN_WH
+      database: FIN
+      schema: ANALYTICS
+      threads: 4
