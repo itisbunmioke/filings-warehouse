@@ -1,0 +1,9 @@
+version: 2
+sources:
+  - name: raw
+    database: FIN
+    schema: RAW
+    tables:
+      - name: sub_raw
+      - name: num_raw
+      - name: load_log
