@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: dim_company
+    columns:
+      - name: cik
+        data_tests: [unique, not_null]
+
+version: 2
+
+models:
+  - name: fct_fact_versions
+    description: Every version of every reported fact, with the interval during which it was the known value.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [fact_key, version_number]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "known_from <= known_to"
+    columns:
+      - name: fact_key
+        data_tests: [not_null]
+      - name: value
+        data_tests: [not_null]
+      - name: known_from
+        data_tests: [not_null]
+      - name: cik
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_company')
+                field: cik
+      - name: form
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['10-K', '10-Q', '10-K/A', '10-Q/A']
+
+  - name: dim_company
+    columns:
+      - name: cik
+        data_tests: [unique, not_null]
+
+  - name: fct_revisions
+    columns:
+      - name: old_value
+        data_tests: [not_null]
