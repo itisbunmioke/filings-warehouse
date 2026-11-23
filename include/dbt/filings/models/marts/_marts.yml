@@ -1,14 +1,6 @@
 version: 2
 
 models:
-  - name: dim_company
-    columns:
-      - name: cik
-        data_tests: [unique, not_null]
-
-version: 2
-
-models:
   - name: fct_fact_versions
     description: Every version of every reported fact, with the interval during which it was the known value.
     data_tests:
@@ -46,3 +38,32 @@ models:
     columns:
       - name: old_value
         data_tests: [not_null]
+
+unit_tests:
+  - name: repeated_values_collapse_and_changes_become_versions
+    description: Three reports of one fact (100, 100, 120) must give two versions with chained intervals.
+    model: fct_fact_versions
+    given:
+      - input: ref('int_reported_facts')
+        rows:
+          - {cik: 1, tag: Revenues, period_end: "2024-12-31", qtrs: 4, uom: USD, value: 100, accepted_at: "2025-02-01 10:00:00", filing_id: c, form: 10-K, is_amendment: false}
+          - {cik: 1, tag: Revenues, period_end: "2024-12-31", qtrs: 4, uom: USD, value: 100, accepted_at: "2025-05-01 10:00:00", filing_id: b, form: 10-Q, is_amendment: false}
+          - {cik: 1, tag: Revenues, period_end: "2024-12-31", qtrs: 4, uom: USD, value: 120, accepted_at: "2026-02-01 10:00:00", filing_id: a, form: 10-K, is_amendment: false}
+    expect:
+      rows:
+        - {cik: 1, value: 100, version_number: 1, known_from: "2025-02-01 10:00:00", known_to: "2026-02-01 10:00:00", is_latest: false, filing_id: c}
+        - {cik: 1, value: 120, version_number: 2, known_from: "2026-02-01 10:00:00", known_to: "9999-12-31 00:00:00", is_latest: true, filing_id: a}
+
+  - name: a_value_that_flips_back_is_a_new_version
+    model: fct_fact_versions
+    given:
+      - input: ref('int_reported_facts')
+        rows:
+          - {cik: 2, tag: Assets, period_end: "2024-12-31", qtrs: 0, uom: USD, value: 50, accepted_at: "2025-02-01 10:00:00", filing_id: a, form: 10-K, is_amendment: false}
+          - {cik: 2, tag: Assets, period_end: "2024-12-31", qtrs: 0, uom: USD, value: 55, accepted_at: "2025-03-01 10:00:00", filing_id: b, form: 10-K/A, is_amendment: true}
+          - {cik: 2, tag: Assets, period_end: "2024-12-31", qtrs: 0, uom: USD, value: 50, accepted_at: "2025-04-01 10:00:00", filing_id: c, form: 10-K/A, is_amendment: true}
+    expect:
+      rows:
+        - {cik: 2, value: 50, version_number: 1, is_latest: false}
+        - {cik: 2, value: 55, version_number: 2, is_latest: false}
+        - {cik: 2, value: 50, version_number: 3, is_latest: true}
