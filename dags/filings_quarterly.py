@@ -1,7 +1,11 @@
 """Quarterly load of the SEC financial statement data sets into Snowflake, followed by dbt build."""
 from datetime import datetime, timedelta, timezone
 
+from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import Param, dag, task
+
+DBT_DIR = "/usr/local/airflow/include/dbt/filings"
+DBT = "/usr/local/airflow/dbt_venv/bin/dbt"
 
 
 def previous_quarter(day: datetime) -> str:
@@ -30,7 +34,12 @@ def filings_quarterly():
         run_date = logical_date or datetime.now(timezone.utc)
         return load_quarter(params["quarter"] or previous_quarter(run_date))
 
-    load_raw()
+    dbt_build = BashOperator(
+        task_id="dbt_build",
+        bash_command=f"cd {DBT_DIR} && {DBT} deps --profiles-dir . && {DBT} build --profiles-dir .",
+    )
+
+    load_raw() >> dbt_build
 
 
 filings_quarterly()
