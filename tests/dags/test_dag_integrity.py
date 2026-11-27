@@ -1,4 +1,4 @@
-"""Example Dags test. This test ensures that all Dags have tags, retries set to two, and no import errors. This is an example pytest and may not be fit the context of your Dags. Feel free to add and remove tests."""
+"""DAG integrity tests: every DAG file imports cleanly, carries an approved tag and retries failed tasks."""
 
 import os
 import logging
@@ -56,7 +56,7 @@ def test_file_imports(rel_path, rv):
         raise Exception(f"{rel_path} failed to import with message \n {rv}")
 
 
-APPROVED_TAGS = {}
+APPROVED_TAGS = {"filings"}
 
 
 @pytest.mark.parametrize(
